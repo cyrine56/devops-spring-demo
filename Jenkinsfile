@@ -1,4 +1,4 @@
-pipeline {
+e {
     agent any
 
     tools {
@@ -20,16 +20,11 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
-            environment {
-                SONAR_TOKEN = credentials('sonar-token')
-            }
             steps {
-                sh '''
-                mvn sonar:sonar \
-                -Dsonar.projectKey=devops-spring-demo \
-                -Dsonar.host.url=http://192.168.56.10:9000 \
-                -Dsonar.login=squ_48890b4281db7c9cba74140be1f4e50a53f14154
-                '''
+                // 'SonarQube' = nom que tu as mis dans Jenkins → Configure System → SonarQube servers
+                withSonarQubeEnv('SonarQube') {
+                    sh 'mvn sonar:sonar -Dsonar.projectKey=devops-spring-demo'
+                }
             }
         }
     }
