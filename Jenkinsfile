@@ -5,6 +5,10 @@ pipeline {
     skipDefaultCheckout(true)
   }
 
+  environment {
+    DOCKER_IMAGE = "cyrineadmin/devops-spring-demo:latest"
+  }
+
   stages {
     stage('Checkout') {
       steps {
@@ -35,13 +39,13 @@ pipeline {
   <servers>
     <server>
       <id>nexus-snapshots</id>
-      <username>${NEXUS_USER}</username>
-      <password>${NEXUS_PASS}</password>
+      <username>${env.NEXUS_USER}</username>
+      <password>${env.NEXUS_PASS}</password>
     </server>
     <server>
       <id>nexus-releases</id>
-      <username>${NEXUS_USER}</username>
-      <password>${NEXUS_PASS}</password>
+      <username>${env.NEXUS_USER}</username>
+      <password>${env.NEXUS_PASS}</password>
     </server>
   </servers>
 </settings>
@@ -49,6 +53,29 @@ pipeline {
 
           sh 'mvn -s settings.xml -B -DskipTests deploy'
         }
+      }
+    }
+
+    stage('Docker Build') {
+      steps {
+        sh 'docker build -t $DOCKER_IMAGE .'
+      }
+    }
+
+    stage('Docker Login & Push') {
+      steps {
+        withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DH_USER', passwordVariable: 'DH_PASS')]) {
+          sh '''
+            echo "$DH_PASS" | docker login -u "$DH_USER" --password-stdin
+            docker push "$DOCKER_IMAGE"
+          '''
+        }
+      }
+    }
+
+    stage('Run with docker-compose') {
+      steps {
+        sh 'docker-compose up -d'
       }
     }
   }
